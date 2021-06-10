@@ -6,16 +6,19 @@ package app;
 
 import javax.xml.parsers.DocumentBuilderFactory;
 import javax.xml.parsers.DocumentBuilder;
+import javax.xml.XMLConstants;
 
 import org.w3c.dom.Document;
 import org.w3c.dom.NodeList;
 import org.w3c.dom.Node;
 import org.w3c.dom.Element;
+import org.xml.sax.InputSource;
 
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.Writer;
 import java.io.StringWriter;
+import java.io.StringReader;
 
 import java.io.IOException;
 import javax.xml.parsers.ParserConfigurationException;
@@ -29,22 +32,20 @@ import javax.xml.transform.stream.StreamResult;
 
 public class XmlNode {
 
+	private StringBuilder conteudoXml;
 	private String nomeArquivo;
-	private Document doc;
+	private Document document;
 	
 	/**
-	 * @param prNomeArquivo String - Deverá ser nome.extensão, Exemplo: caminho/meuArquivo.xml
-	 * 
-	 * DETALHES
-	 * 		Construtor inicia XmlNode, previamente setando Document doc 
-	 * 		baseando-se no prNomeArquivo que deverá conter o xml a ser setado em Document doc
+	 * Constroi novo XmlNode usando arquivo
+	 * @param pNomeArquivo String - Deverá ser nome.extensão, Exemplo: caminho/meuArquivo.xml
 	 */
-	public XmlNode(String prNomeArquivo) {
+	public XmlNode(String pNomeArquivo) {
 		
-		nomeArquivo = prNomeArquivo;
+		nomeArquivo = pNomeArquivo;
 		
 		try {
-			setDocument(prNomeArquivo);
+			setDocument(pNomeArquivo);
 		}catch (Exception e) {
 			e.printStackTrace();
 		}
@@ -52,75 +53,102 @@ public class XmlNode {
 	}
 	
 	/**
-	 * @param prDocument Document - Um objeto do tipo Document que já tenha sido processado
-	 * 
-	 * DETALHES
-	 * 		Caso já exista um objeto do tipo Document processado
-	 * 		este deverá ser passado nesse construtor de diferente assinatura
-	 s*/
-	public XmlNode(Document prDocument) {
+	 * Constroi novo XmlNode usando documento já existente
+	 * @param pDocument Document - Um objeto do tipo Document que já tenha sido processado
+	 */
+	public XmlNode(Document pDocument) {
 		
-		doc = prDocument;
-		
-		setDocument(prDocument);
+		document = pDocument;
+		setDocument(pDocument);
 		
 	}
 	
 	/**
-	 * @param prNomeArquivo String - Nome do arquivo xml contendo xml para setar em Document doc
-	 * 
-	 * DETALHES
-	 * 		Seta Document doc atraves de um arquivo.xml recebido,
-	 * 		cujo qual deverá conter o xml a ser processado
-	 * 
+	 * Constroi novo XmlNode usando StringBuilder 
+	 * @param pXml StringBuilder - Um objeto do tipo StringBuilder com conteúdo do xml
 	 */
-	public void setDocument(String prNomeArquivo) 
+	public XmlNode(StringBuilder pXml) {
+		
+		conteudoXml = pXml;
+		setDocument(pXml);
+		
+	}
+	
+	
+	
+	
+	
+	
+	
+
+	/**
+	 * Seta document usando arquivo
+	 * @param pNomeArquivo String - Nome do arquivo xml contendo xml para setar em Document document 
+	 */
+	public void setDocument(String pNomeArquivo) 
 		throws SAXException, IOException, ParserConfigurationException {
 		
-		File xmlFile = new File(prNomeArquivo);
+		File xmlFile = new File(pNomeArquivo);
 		
 		DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
 		
 		factory.setValidating(false);
 		
 		DocumentBuilder dBuilder = factory.newDocumentBuilder();
-		doc = dBuilder.parse(new FileInputStream(xmlFile));
+		document = dBuilder.parse(new FileInputStream(xmlFile));
 								
 	}
 	
 	/**
-	 * @param prDocument Document - Deve ser objeto já processado e que será usado para setar Document doc
-	 * 
-	 * DETALHES 
-	 * 		Seta Document doc atraves de document já processado recebido
-	 *  	como parametro do tipo Document
+	 * Seta document usando Document pDocument já existente
+	 * @param pDocument Document - Deve ser objeto já processado e que será usado para setar Document document
 	 */
-	public void setDocument(Document prDocument) {
-		doc = prDocument;
+	public void setDocument(Document pDocument) {
+		document = pDocument;
+	}
+	
+	
+	/**
+	 * Convertendo string do StringBuilder para Document, seta o document
+	 * @param pXml StringBuilder com dados do xml
+	 */
+	public void setDocument(StringBuilder pXml) {
+	
+		try {
+			StringReader reader = new StringReader(pXml.toString());
+			
+			DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
+			factory.setFeature(XMLConstants.FEATURE_SECURE_PROCESSING, true);
+			document = factory.newDocumentBuilder().parse(new InputSource(reader));
+			
+		}catch(Exception e) {
+			e.printStackTrace();
+		}
+		
 	}
 	
 	public Document getDocument() {
-		return doc;
+		return document;
 	}
 
 	/**
-	 * @param prTagFilha String - A nova Tag que será adicionada no Documento Xml
-	 * @param prTagPai String - A Tag pai de prTagFilha, ou seja, um nível acima da Tag filha
-	 * @param prConteudo String - Caso queira iniciar a nova Tag com algum texto, passar uma String,
+	 * @param pTagFilha String - A nova Tag que será adicionada no Documento Xml
+	 * @param pTagPai String - A Tag pai de pTagFilha, ou seja, um nível acima da Tag filha
+	 * @param pConteudo String - Caso queira iniciar a nova Tag com algum texto, passar uma String,
 	 *	se não, apenas passar null.
 	 */
-	public void addTag(String prTagFilha, String prTagPai, String prConteudo) {
+	public void addTag(String pTagFilha, String pTagPai, String pConteudo) {
 		
-		NodeList nodeList = doc.getElementsByTagName(prTagPai);
+		NodeList nodeList = document.getElementsByTagName(pTagPai);
 		Node nodeTagPai = nodeList.item(0);
 		
 		if( nodeTagPai.getNodeType() == Node.ELEMENT_NODE ) {
 			
 			Element e = (Element) nodeTagPai;
-			Node n = doc.createElement(prTagFilha);
+			Node n = document.createElement(pTagFilha);
 			
-			if( prConteudo != null ) {
-				n.setTextContent(prConteudo);
+			if( pConteudo != null ) {
+				n.setTextContent(pConteudo);
 			}
 			
 			e.appendChild(n);
@@ -130,40 +158,42 @@ public class XmlNode {
 	}
 	
 	/**
+	 * Remove a tag informada do document xml
 	 * @param prTag String - A Tag a ser removida do documento xml
 	 */
-	public void removeTag(String prTag) {
+	public void removeTag(String pTag) {
 		
-		Element e = (Element) doc.getElementsByTagName(prTag).item(0);
+		Element e = (Element) document.getElementsByTagName(pTag).item(0);
 		e.getParentNode().removeChild(e);
 		
-		doc.normalize();
+		document.normalize();
 		
 	}
 
 	/**
+	 * Imprime tags dentro de uma determinada tag
 	 * @param prTag String - A Tag que se deseja imprimir seu conteúdo
 	 */
-	public void printTag(String prTag) {
+	public void printTag(String pTag) {
 		
-		NodeList nodeList = doc.getElementsByTagName(prTag);
+		NodeList nodeList = document.getElementsByTagName(pTag);
 				
 		for( int i=0; i<nodeList.getLength(); i++ ) {
 			
-			Node nNode = nodeList.item(i);
+			Node nodePai = nodeList.item(i);
 			
-			System.out.println("> Nó Pai: " + nNode);
+			System.out.println("> Nó Pai: " + nodePai);
 			
-			NodeList nodesFilhos = nNode.getChildNodes();
+			NodeList nodesFilhos = nodePai.getChildNodes();
 			
 			for( int j=0; j<nodesFilhos.getLength(); j++ ) {
 				
-				Node nFilho = nodesFilhos.item(j);
+				Node nodeFilho = nodesFilhos.item(j);
 				
-				System.out.println("\t> Nó Filho: " + nFilho);
+				System.out.println("\t> Nó Filho: " + nodeFilho);
 				
-				if( nFilho.getNodeType() == Node.ELEMENT_NODE ) {
-					Element elem = (Element) nFilho;					
+				if( nodeFilho.getNodeType() == Node.ELEMENT_NODE ) {
+					Element elem = (Element) nodeFilho;					
 				}
 				
 			}
@@ -182,7 +212,7 @@ public class XmlNode {
         tf.setOutputProperty(OutputKeys.ENCODING, "UTF-8");
         tf.setOutputProperty(OutputKeys.INDENT, "yes");
         Writer out = new StringWriter();
-        tf.transform(new DOMSource(doc), new StreamResult(out));
+        tf.transform(new DOMSource(document), new StreamResult(out));
         
         return out.toString();
 	}
